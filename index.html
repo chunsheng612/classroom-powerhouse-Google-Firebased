@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班級經營動力站 v3.0 (雲端版)</title>
+    
+    <!-- 1. 引入 Firebase SDK -->
+    <!-- 使用 v8 版本，語法對初學者更直觀 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        
+        :root, body.theme-cosmic {
+            --primary-color: #0A84FF;
+            --success-color: #30D158;
+            --danger-color: #FF453A;
+            --warning-color: #FF9F0A;
+            --bg-gradient: linear-gradient(135deg, #1D2B64, #34495e);
+            --card-bg: rgba(28, 28, 30, 0.65);
+            --card-border: rgba(255, 255, 255, 0.1); 
+            --text-color-primary: rgba(255, 255, 255, 0.95); 
+            --text-color-secondary: rgba(255, 255, 255, 0.6); 
+            --input-bg: rgba(0, 0, 0, 0.3);
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --control-border-radius: 14px;
+            --particle-color: rgba(255, 255, 255, 0.6);
+        }
+        body.theme-warm {
+            --primary-color: #D2691E;
+            --success-color: #2E8B57;
+            --danger-color: #DC143C;
+            --warning-color: #FFA500;
+            --bg-gradient: linear-gradient(-45deg, #FDFBF8, #F5DEB3, #FAEBD7, #FDF5E6);
+            --card-bg: rgba(255, 255, 255, 0.25);
+            --card-border: rgba(255, 255, 255, 0.3); 
+            --text-color-primary: #3D352A;
+            --text-color-secondary: rgba(61, 53, 42, 0.7); 
+            --input-bg: rgba(255, 255, 255, 0.2);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --particle-color: rgba(210, 105, 30, 0.5);
+        }
+        body.theme-apple {
+            --primary-color: #007AFF;
+            --success-color: #34C759;
+            --danger-color: #FF3B30;
+            --warning-color: #FF9500;
+            --bg-gradient: linear-gradient(135deg, #fceabb 0%, #f8b500 100%);
+            --card-bg: rgba(255, 255, 255, 0.45);
+            --card-border: rgba(255, 255, 255, 0.5); 
+            --text-color-primary: #1d1d1f;
+            --text-color-secondary: #3c3c43; 
+            --input-bg: rgba(255, 255, 255, 0.5);
+            --shadow-color: rgba(0, 0, 0, 0.15);
+            --particle-color: rgba(255, 255, 255, 0.7);
+        }
+
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            color: var(--text-color-primary);
+            -webkit-font-smoothing: antialiased;
+            background: var(--bg-gradient);
+            background-size: 200% 200%;
+            animation: gradientBG 20s ease infinite;
+            overflow-x: hidden;
+        }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        #particle-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+
+        .app-screen { display: none; padding: 30px; width: 100%; min-height: 100%; padding-bottom: 100px; }
+        .app-screen.active { display: flex; flex-direction: column; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        
+        .container { max-width: 1400px; margin: 0 auto; width: 100%; }
+        .header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 15px; }
+        h1 { font-weight: 700; font-size: 2.5em; color: var(--text-color-primary); text-shadow: 0 2px 10px rgba(0,0,0,0.4); }
+        .card { background: var(--card-bg); backdrop-filter: blur(50px); -webkit-backdrop-filter: blur(50px); border-radius: 24px; border: 1px solid var(--card-border); box-shadow: 0 20px 60px 0 var(--shadow-color); padding: 30px; }
+        h2 { font-weight: 600; color: var(--text-color-primary); margin: 0 0 25px; font-size: 1.8em; }
+        h3 { font-weight: 700; margin: 0; font-size: 1.2em; }
+        
+        button, input { border-radius: var(--control-border-radius) !important; font-family: inherit; border: none; }
+        button { cursor: pointer; transition: all 0.2s ease; transform: scale(1); }
+        button:hover { transform: scale(1.05); filter: brightness(1.1); }
+        button:active { transform: scale(0.98); filter: brightness(0.95); }
+        .btn { padding: 12px 25px; font-weight: 600; font-size: 1em; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .btn-lg { padding: 15px 35px; font-size: 1.2em; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-success { background: var(--success-color); color: white; }
+        .btn-danger { background: var(--danger-color); color: white; }
+        .btn-secondary { background: var(--input-bg); color: var(--text-color-primary); border: 1px solid var(--card-border); }
+        input { background: var(--input-bg); color: var(--text-color-primary); padding: 12px 15px; border: 1px solid var(--card-border); }
+
+        #theme-switcher { display: flex; gap: 8px; background: var(--input-bg); padding: 5px; border-radius: var(--control-border-radius); border: 1px solid var(--card-border); }
+        .theme-btn { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+        .theme-btn.active { border-color: var(--primary-color); }
+        #theme-cosmic { background: linear-gradient(135deg, #1D2B64, #34495e); }
+        #theme-warm { background: linear-gradient(135deg, #FDFBF8, #F5DEB3); }
+        #theme-apple { background: linear-gradient(135deg, #fceabb, #f8b500); }
+        .creator-credit { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: var(--card-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--card-border); color: var(--text-color-secondary); padding: 10px 20px; border-radius: var(--control-border-radius); font-size: 14px; font-weight: 500; text-decoration: none; z-index: 100; transition: all 0.3s ease; }
+        .creator-credit:hover { color: var(--text-color-primary); box-shadow: 0 5px 20px rgba(0,0,0,0.2); transform: translateY(-3px) translateX(-50%); }
+
+        #class-dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .class-card { padding: 25px; cursor: pointer; text-align: center; position: relative; }
+        .class-card-actions { position: absolute; top: 15px; right: 15px; display: flex; gap: 8px; opacity: 0.5; transition: opacity 0.2s ease; }
+        .class-card:hover .class-card-actions { opacity: 1; }
+        .class-action-btn { width: 32px; height: 32px; font-size: 16px; padding: 0; border-radius: 50% !important; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); color: var(--text-color-secondary); border: 1px solid var(--card-border); }
+        .class-action-btn:hover { color: var(--text-color-primary); background: rgba(0,0,0,0.4); }
+        #add-class-card { border: 2px dashed var(--card-border); font-size: 3em; display: flex; align-items: center; justify-content: center; color: var(--text-color-secondary); }
+
+        .class-view-nav { display: flex; gap: 5px; margin-bottom: 25px; background: rgba(0,0,0,0.2); border-radius: var(--control-border-radius); padding: 5px; }
+        .nav-tab { flex: 1; text-align: center; padding: 12px; color: var(--text-color-secondary); font-weight: 600; border-radius: 10px; cursor: pointer; }
+        .nav-tab.active { background: var(--primary-color); color: white; box-shadow: 0 0 15px var(--primary-color); }
+        .tab-content { display: none; } .tab-content.active { display: block; animation: fadeIn 0.4s; }
+        
+        #student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .student-card { padding: 20px; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; }
+        .student-header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .delete-student-btn { width: 28px; height: 28px; padding: 0; font-size: 15px; border-radius: 50% !important; background: transparent; color: var(--text-color-secondary); border: none; opacity: 0; transition: opacity 0.2s ease, background 0.2s ease; }
+        .student-card:hover .delete-student-btn { opacity: 0.7; }
+        .delete-student-btn:hover { opacity: 1; background: var(--danger-color); color: white; }
+        .student-name { font-size: 1.3em; font-weight: 600; }
+        .student-score { font-size: 2.5em; font-weight: 900; margin: 15px 0; color: var(--primary-color); }
+        .score-controls { display: flex; gap: 10px; }
+        .score-btn { width: 44px; height: 44px; font-size: 1.8em; padding: 0; border-radius: 50% !important; }
+        .score-feedback { position: absolute; top: 50%; left: 50%; font-size: 3.5em; font-weight: 900; pointer-events: none; opacity: 0; animation: score-pop 0.6s ease-out; }
+        @keyframes score-pop { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); } 100% { opacity: 0; transform: translate(-50%, -150%) scale(1); } }
+
+        .group-container { display: grid; grid-template-columns: 300px 1fr; gap: 25px; align-items: start; }
+        @media (max-width: 900px) { .group-container { grid-template-columns: 1fr; } }
+        .groups-area { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .group-column { background: rgba(0,0,0,0.2); border-radius: var(--control-border-radius); padding: 20px; }
+        .group-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .group-members { min-height: 150px; border-radius: 8px; padding: 5px; display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
+        .student-chip { background: var(--card-bg); backdrop-filter: blur(10px); padding: 10px; border-radius: 10px; cursor: grab; text-align: center; }
+        #unassigned-students .student-chip { background: var(--warning-color); color: white; }
+        
+        .grades-actions { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; }
+        #grades-table-container { overflow-x: auto; }
+        #grades-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        #grades-table th, #grades-table td { padding: 15px; text-align: center; border-bottom: 1px solid var(--card-border); }
+        .final-grade { font-weight: 900; font-size: 1.3em; color: var(--success-color); }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(15px); opacity: 0; transition: opacity 0.3s ease; }
+        .modal.visible { display: flex; opacity: 1; }
+        .modal .card { width: 90%; max-width: 450px; transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1.2); }
+        .modal.visible .card { transform: scale(1); }
+
+        /* 新增的 UI 樣式 */
+        #user-auth-controls { display: flex; align-items: center; gap: 15px; }
+        #user-info { font-weight: 500; font-size: 0.9em; }
+        #logged-out-view { text-align: center; padding: 50px 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #logged-out-view h2 { font-size: 2em; }
+        #logged-out-view p { font-size: 1.2em; color: var(--text-color-secondary); max-width: 600px; margin: 15px auto 30px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <canvas id="particle-canvas"></canvas>
+    
+    <div id="class-dashboard" class="app-screen active">
+        <div class="container">
+            <div class="header">
+                <h1>班級經營動力站</h1>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div id="theme-switcher">
+                        <button class="theme-btn" id="theme-cosmic" title="宇宙巡航"></button>
+                        <button class="theme-btn" id="theme-warm" title="暖心白板"></button>
+                        <button class="theme-btn" id="theme-apple" title="蘋果簡約"></button>
+                    </div>
+                    <!-- 使用者登入/登出 UI -->
+                    <div id="user-auth-controls">
+                        <span id="user-info" style="display: none;"></span>
+                        <button id="login-btn" class="btn btn-primary">使用 Google 登入</button>
+                        <button id="logout-btn" class="btn btn-secondary" style="display: none;">登出</button>
+                    </div>
+                </div>
+            </div>
+            <!-- 登入後顯示的內容 -->
+            <div id="app-content" style="display: none;">
+                <div id="class-dashboard-grid"></div>
+            </div>
+            <!-- 登出時顯示的內容 -->
+            <div id="logged-out-view" class="card">
+                <h2>歡迎使用雲端版班級經營動力站</h2>
+                <p>這是一款專為教師設計的班級管理工具，您的所有資料將安全地儲存在雲端，讓您隨時隨地都能使用。請先登入以開始管理您的班級。</p>
+                <button id="main-login-btn" class="btn btn-primary btn-lg">使用 Google 登入開始</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="class-view" class="app-screen"><div class="container"><div class="header"><h1 id="class-view-title"></h1><button id="back-to-dashboard-btn" class="btn btn-secondary">返回總覽</button></div><div class="class-view-nav"><button class="nav-tab active" data-tab="students">個人模式</button><button class="nav-tab" data-tab="groups">分組模式</button><button class="nav-tab" data-tab="grades">成績結算</button></div><div id="students-tab" class="tab-content active card"><div id="student-grid"></div></div><div id="groups-tab" class="tab-content"><div class="card" style="margin-bottom: 20px;"><div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: end;"><div style="flex-grow: 1;"><label for="group-count-input">設定組數</label><input type="number" id="group-count-input" value="4" min="1" max="20"></div><button id="random-group-btn" class="btn btn-primary">一鍵隨機分組</button></div></div><div class="group-container"><div class="group-column card" id="unassigned-students-column"><div class="group-header"><h3>未分組</h3></div><div class="group-members" id="unassigned-students"></div></div><div class="groups-area" id="groups-area"></div></div></div><div id="grades-tab" class="tab-content card"><div class="grades-actions"><button id="calculate-grades-btn" class="btn btn-success">一鍵結算平時分數</button><button id="export-grades-btn" class="btn btn-primary">匯出Excel報表</button><button id="reset-scores-btn" class="btn btn-danger">新考段分數重置</button></div><div id="grades-table-container"><table id="grades-table"><thead><tr><th>座號/姓名</th><th>累積淨分</th><th>平時分數</th></tr></thead><tbody></tbody></table></div></div></div></div>
+    
+    <div id="add-class-modal" class="modal"><div class="card"><h2>新增班級</h2><div style="margin-bottom: 15px;"><label for="new-class-name">班級名稱</label><input type="text" id="new-class-name" placeholder="例如：三年一班"></div><div style="margin-bottom: 20px;"><label for="new-class-size">班級人數 (以座號命名)</label><input type="number" id="new-class-size" value="28" min="1" max="60"></div><div style="display: flex; gap: 10px;"><button id="cancel-add-class" class="btn btn-secondary" style="flex:1;">取消</button><button id="confirm-add-class" class="btn btn-primary" style="flex:1;">確認</button></div></div></div>
+    <div id="edit-class-modal" class="modal"><div class="card"><h2>編輯班級</h2><div style="margin-bottom: 20px;"><label for="edit-class-name">班級名稱</label><input type="text" id="edit-class-name" placeholder="例如：三年一班"></div><div style="display: flex; gap: 10px;"><button id="cancel-edit-class" class="btn btn-secondary" style="flex:1;">取消</button><button id="confirm-edit-class" class="btn btn-primary" style="flex:1;">儲存</button></div></div></div>
+    
+    <a href="https://www.facebook.com/FunFun.AI.Teacher/" target="_blank" rel="noopener noreferrer" class="creator-credit">Created by 方方老師</a>
+    
+    <script>
+        // 2. 初始化 Firebase
+        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+        //  // Import the functions you need from the SDKs you need
+                import { initializeApp } from "firebase/app";
+                // TODO: Add SDKs for Firebase products that you want to use
+                // https://firebase.google.com/docs/web/setup#available-libraries
+
+                // Your web app's Firebase configuration
+                const firebaseConfig = {
+                apiKey: "AIzaSyBVmWb6L5AnZ_rM-3pITB0Mwy4Cr27xK7c",
+                authDomain: "classroom-powerhouse.firebaseapp.com",
+                projectId: "classroom-powerhouse",
+                storageBucket: "classroom-powerhouse.firebasestorage.app",
+                messagingSenderId: "268009025575",
+                appId: "1:268009025575:web:e852aa4b277ea27a4cde02"
+                };
+                // Initialize Firebase
+                const app = initializeApp(firebaseConfig);
+        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY", // 替換成您的金鑰
+            authDomain: "YOUR_AUTH_DOMAIN", // 替換成您的金鑰
+            projectId: "YOUR_PROJECT_ID", // 替換成您的金鑰
+            storageBucket: "YOUR_STORAGE_BUCKET", // 替換成您的金鑰
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // 替換成您的金鑰
+            appId: "YOUR_APP_ID" // 替換成您的金鑰
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- 1. 變數宣告 ---
+            const screens = { dashboard: document.getElementById('class-dashboard'), classView: document.getElementById('class-view') };
+            const classDashboardGrid = document.getElementById('class-dashboard-grid');
+            
+            const addClassModal = document.getElementById('add-class-modal');
+            const newClassNameInput = document.getElementById('new-class-name');
+            const newClassSizeInput = document.getElementById('new-class-size');
+            const confirmAddClassBtn = document.getElementById('confirm-add-class');
+            const cancelAddClassBtn = document.getElementById('cancel-add-class');
+
+            const editClassModal = document.getElementById('edit-class-modal');
+            const editClassNameInput = document.getElementById('edit-class-name');
+            const confirmEditClassBtn = document.getElementById('confirm-edit-class');
+            const cancelEditClassBtn = document.getElementById('cancel-edit-class');
+            
+            const classViewTitle = document.getElementById('class-view-title');
+            const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
+            const navTabs = document.querySelectorAll('.nav-tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const studentGrid = document.getElementById('student-grid');
+            const groupCountInput = document.getElementById('group-count-input');
+            const randomGroupBtn = document.getElementById('random-group-btn');
+            const unassignedStudentsContainer = document.getElementById('unassigned-students');
+            const groupsArea = document.getElementById('groups-area');
+            const gradesTableBody = document.querySelector('#grades-table tbody');
+            const calculateGradesBtn = document.getElementById('calculate-grades-btn');
+            const exportGradesBtn = document.getElementById('export-grades-btn');
+            const resetScoresBtn = document.getElementById('reset-scores-btn');
+            const themeSwitcher = document.getElementById('theme-switcher');
+            
+            const loginBtn = document.getElementById('login-btn');
+            const mainLoginBtn = document.getElementById('main-login-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            const userInfo = document.getElementById('user-info');
+            const appContent = document.getElementById('app-content');
+            const loggedOutView = document.getElementById('logged-out-view');
+
+            let allClasses = [];
+            let currentClassId = null;
+            let draggedStudentId = null;
+            let currentUser = null;
+
+            // --- 2. 核心功能函數 ---
+            const switchScreen = (screenName) => { Object.values(screens).forEach(s => s.classList.remove('active')); screens[screenName].classList.add('active'); };
+            const switchTab = (tabName) => { navTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName)); tabContents.forEach(c => c.classList.toggle('active', c.id === `${tabName}-tab`)); };
+            const showModal = (modalId) => document.getElementById(modalId).classList.add('visible');
+            const hideModal = (modalId) => document.getElementById(modalId).classList.remove('visible');
+            const applyTheme = (themeName) => { document.body.className = `theme-${themeName}`; document.querySelectorAll('.theme-btn').forEach(btn => { btn.classList.toggle('active', btn.id === `theme-${themeName}`); }); if (window.initParticles) initParticles(); };
+            const saveTheme = (themeName) => localStorage.setItem('classroomPowerhouse_theme', themeName);
+            const loadTheme = () => { const savedTheme = localStorage.getItem('classroomPowerhouse_theme') || 'cosmic'; applyTheme(savedTheme); };
+            
+            async function loadDataFromFirestore() {
+                if (!currentUser) return;
+                try {
+                    const classesSnapshot = await db.collection('users').doc(currentUser.uid).collection('classes').orderBy('name').get();
+                    const classPromises = classesSnapshot.docs.map(async (classDoc) => {
+                        const classData = classDoc.data();
+                        const studentsSnapshot = await classDoc.ref.collection('students').get();
+                        const students = studentsSnapshot.docs.map(studentDoc => ({ id: studentDoc.id, ...studentDoc.data() }));
+                        return { id: classDoc.id, ...classData, students };
+                    });
+                    
+                    allClasses = await Promise.all(classPromises);
+                    renderDashboard();
+                } catch (error) {
+                    console.error("Error loading data:", error);
+                    alert("讀取資料失敗，請檢查網路連線或稍後再試。");
+                }
+            }
+
+            // --- 3. 畫面渲染函數 ---
+            const renderDashboard = () => {
+                classDashboardGrid.innerHTML = '';
+                if (!currentUser) return;
+                
+                allClasses.forEach(c => {
+                    const card = document.createElement('div');
+                    card.className = 'card class-card';
+                    card.dataset.id = c.id;
+                    card.innerHTML = `<div class="class-card-actions"><button class="class-action-btn edit-class-btn" title="編輯班級">✏️</button><button class="class-action-btn delete-class-btn" title="刪除班級">🗑️</button></div><h3>${c.name}</h3><p>${c.students.length} 位學生</p>`;
+                    classDashboardGrid.appendChild(card);
+                });
+                const addCard = document.createElement('button');
+                addCard.className = 'card class-card';
+                addCard.id = 'add-class-card';
+                addCard.textContent = '+';
+                classDashboardGrid.appendChild(addCard);
+            };
+            const renderClassView = () => { const c = allClasses.find(cls => cls.id === currentClassId); if (!c) { switchScreen('dashboard'); return; } classViewTitle.textContent = c.name; renderStudentsTab(c); renderGroupsTab(c); renderGradesTab(c); switchTab('students'); switchScreen('classView'); };
+            const renderStudentsTab = (c) => { studentGrid.innerHTML = ''; c.students.sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric: true})).forEach(s => { const card = document.createElement('div'); card.className = 'card student-card'; card.innerHTML = `<div class="student-header"><div class="student-name">${s.name}</div><button class="delete-student-btn" data-id="${s.id}" title="刪除學生">🗑️</button></div><div class="student-score">${s.score}</div><div class="score-controls"><button class="btn btn-danger score-btn" data-id="${s.id}" data-amount="-1">-</button><button class="btn btn-success score-btn" data-id="${s.id}" data-amount="1">+</button></div>`; studentGrid.appendChild(card); }); };
+            const renderGroupsTab = (c) => { unassignedStudentsContainer.innerHTML = ''; groupsArea.innerHTML = ''; if (!c.groupCount) c.groupCount = 4; groupCountInput.value = c.groupCount; c.students.forEach(s => { if (s.group === null || s.group > c.groupCount) unassignedStudentsContainer.appendChild(createStudentChip(s)); }); for (let i = 1; i <= c.groupCount; i++) { const col = document.createElement('div'); col.className = 'group-column card'; col.dataset.groupId = i; col.innerHTML = `<div class="group-header"><h3>第 ${i} 組</h3><div class="score-controls"><button class="btn btn-danger score-btn" data-group-id="${i}" data-amount="-1">-</button><button class="btn btn-success score-btn" data-group-id="${i}" data-amount="1">+</button></div></div><div class="group-members"></div>`; const members = col.querySelector('.group-members'); c.students.filter(s => s.group === i).forEach(s => members.appendChild(createStudentChip(s))); groupsArea.appendChild(col); } };
+            const renderGradesTab = (c) => { gradesTableBody.innerHTML = ''; c.students.sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric: true})).forEach(s => { const r = document.createElement('tr'); r.innerHTML = `<td>${s.name}</td><td>${s.score}</td><td class="final-grade" data-id="${s.id}">-</td>`; gradesTableBody.appendChild(r); }); };
+            const createStudentChip = (s) => { const c = document.createElement('div'); c.className = 'student-chip'; c.textContent = s.name; c.dataset.studentId = s.id; c.draggable = true; return c; };
+
+            // --- 4. 業務邏輯函數 ---
+            const showScoreFeedback = (el, amount) => { const f = document.createElement('div'); f.className = 'score-feedback'; f.textContent = amount > 0 ? `+${amount}` : amount; f.style.color = amount > 0 ? 'var(--success-color)' : 'var(--danger-color)'; el.appendChild(f); setTimeout(() => f.remove(), 600); };
+            
+            const updateScore = async (studentId, amount) => {
+                const c = allClasses.find(cls => cls.id === currentClassId); const s = c.students.find(st => st.id === studentId);
+                if (s) {
+                    const studentRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(studentId);
+                    await studentRef.update({ score: firebase.firestore.FieldValue.increment(amount) });
+                    s.score += amount;
+                    const card = studentGrid.querySelector(`.score-btn[data-id="${studentId}"]`).closest('.student-card');
+                    showScoreFeedback(card, amount);
+                    setTimeout(() => { renderStudentsTab(c); renderGradesTab(c); }, 300);
+                }
+            };
+            
+            const updateGroupScore = async (groupId, amount) => {
+                const c = allClasses.find(cls => cls.id === currentClassId); const batch = db.batch();
+                c.students.filter(s => s.group === groupId).forEach(s => {
+                    const studentRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(s.id);
+                    batch.update(studentRef, { score: firebase.firestore.FieldValue.increment(amount) });
+                    s.score += amount;
+                });
+                await batch.commit();
+                const col = document.querySelector(`.group-column[data-group-id="${groupId}"]`);
+                showScoreFeedback(col, amount);
+                setTimeout(() => { renderStudentsTab(c); renderGradesTab(c); }, 300);
+            };
+            
+            const calculateGrades = () => { const c = allClasses.find(cls => cls.id === currentClassId); const scores = c.students.map(s => s.score); const min = Math.min(...scores), max = Math.max(...scores); const range = max - min; c.students.forEach(s => { let grade = (range === 0) ? 90 : 80 + ((s.score - min) / range) * 20; document.querySelector(`.final-grade[data-id="${s.id}"]`).textContent = Math.round(grade); }); };
+
+            const resetScores = async () => {
+                if(confirm('確定要重置此班級所有學生的分數為 0 嗎？')) {
+                    const c = allClasses.find(cls => cls.id === currentClassId); const batch = db.batch();
+                    c.students.forEach(s => {
+                        const studentRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(s.id);
+                        batch.update(studentRef, { score: 0 });
+                        s.score = 0;
+                    });
+                    await batch.commit();
+                    renderClassView();
+                }
+            };
+            
+            async function deleteClassAndSubcollections(classId) {
+                const classRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(classId);
+                const studentsSnapshot = await classRef.collection('students').get();
+                const batch = db.batch();
+                studentsSnapshot.docs.forEach(doc => { batch.delete(doc.ref); });
+                await batch.commit();
+                await classRef.delete();
+            }
+
+            // --- 5. 事件監聽 ---
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    userInfo.textContent = user.displayName;
+                    loginBtn.style.display = 'none'; logoutBtn.style.display = 'block'; userInfo.style.display = 'block';
+                    loggedOutView.style.display = 'none'; appContent.style.display = 'block';
+                    loadDataFromFirestore();
+                } else {
+                    currentUser = null; allClasses = [];
+                    loginBtn.style.display = 'block'; logoutBtn.style.display = 'none'; userInfo.style.display = 'none';
+                    loggedOutView.style.display = 'flex'; appContent.style.display = 'none';
+                    switchScreen('dashboard');
+                    renderDashboard();
+                }
+            });
+
+            const handleLogin = () => { const provider = new firebase.auth.GoogleAuthProvider(); auth.signInWithPopup(provider).catch(error => console.error("Login failed:", error)); };
+            loginBtn.addEventListener('click', handleLogin);
+            mainLoginBtn.addEventListener('click', handleLogin);
+            logoutBtn.addEventListener('click', () => auth.signOut());
+
+            classDashboardGrid.addEventListener('click', async (e) => {
+                const card = e.target.closest('.class-card'); if (!card) return;
+                const classId = card.dataset.id;
+                
+                if (e.target.closest('.delete-class-btn')) {
+                    e.stopPropagation();
+                    const targetClass = allClasses.find(c => c.id === classId);
+                    if (targetClass && confirm(`確定要刪除「${targetClass.name}」嗎？所有資料將無法復原！`)) {
+                        await deleteClassAndSubcollections(classId);
+                        await loadDataFromFirestore();
+                    }
+                } else if (e.target.closest('.edit-class-btn')) {
+                    e.stopPropagation();
+                    const targetClass = allClasses.find(c => c.id === classId);
+                    if (targetClass) { editClassNameInput.value = targetClass.name; editClassModal.dataset.editingId = classId; showModal('edit-class-modal'); }
+                } else if (card.id === 'add-class-card') {
+                    showModal('add-class-modal');
+                } else if (classId) {
+                    currentClassId = classId; renderClassView();
+                }
+            });
+            
+            studentGrid.addEventListener('click', async (e) => {
+                if (e.target.matches('.score-btn')) { updateScore(e.target.dataset.id, parseInt(e.target.dataset.amount)); }
+                const deleteBtn = e.target.closest('.delete-student-btn');
+                if (deleteBtn) {
+                    const studentId = deleteBtn.dataset.id; const c = allClasses.find(cls => cls.id === currentClassId); const s = c.students.find(st => st.id === studentId);
+                    if (s && confirm(`確定要刪除學生「${s.name}」嗎？`)) {
+                        await db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(studentId).delete();
+                        c.students = c.students.filter(st => st.id !== studentId);
+                        renderClassView();
+                    }
+                }
+            });
+
+            confirmAddClassBtn.addEventListener('click', async () => { 
+                const name = newClassNameInput.value.trim(); const count = parseInt(newClassSizeInput.value, 10);
+                if (name && count > 0 && currentUser) {
+                    const classRef = await db.collection('users').doc(currentUser.uid).collection('classes').add({ name, groupCount: 4, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    const batch = db.batch();
+                    for(let i=1; i<=count; i++) {
+                        const studentRef = classRef.collection('students').doc();
+                        batch.set(studentRef, {name: `${i}號`, score: 0, group: null});
+                    }
+                    await batch.commit();
+                    await loadDataFromFirestore();
+                    hideModal('add-class-modal');
+                    newClassNameInput.value = ''; newClassSizeInput.value = 28;
+                } else { alert('請輸入有效班級名稱與人數 (1-60)。'); }
+            });
+            cancelAddClassBtn.addEventListener('click', () => hideModal('add-class-modal'));
+            
+            confirmEditClassBtn.addEventListener('click', async () => {
+                const newName = editClassNameInput.value.trim(); const editingId = editClassModal.dataset.editingId;
+                if (newName && editingId) {
+                    await db.collection('users').doc(currentUser.uid).collection('classes').doc(editingId).update({ name: newName });
+                    const targetClass = allClasses.find(c => c.id === editingId);
+                    if(targetClass) targetClass.name = newName;
+                    renderDashboard();
+                    hideModal('edit-class-modal');
+                } else { alert('請輸入有效的班級名稱。'); }
+            });
+            cancelEditClassBtn.addEventListener('click', () => hideModal('edit-class-modal'));
+
+            backToDashboardBtn.addEventListener('click', () => { switchScreen('dashboard'); });
+            navTabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+            groupsArea.addEventListener('click', (e) => { if (e.target.matches('.score-btn')) updateGroupScore(parseInt(e.target.dataset.groupId), parseInt(e.target.dataset.amount)); });
+            
+            groupCountInput.addEventListener('change', async () => {
+                const newCount = parseInt(groupCountInput.value, 10); const c = allClasses.find(cls => cls.id === currentClassId);
+                if (newCount > 0 && c) {
+                    await db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).update({ groupCount: newCount });
+                    c.groupCount = newCount;
+                    const batch = db.batch();
+                    c.students.forEach(s => {
+                        const studentRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(s.id);
+                        batch.update(studentRef, { group: null });
+                        s.group = null;
+                    });
+                    await batch.commit();
+                    renderGroupsTab(c);
+                }
+            });
+
+            randomGroupBtn.addEventListener('click', async () => { 
+                const c = allClasses.find(cls => cls.id === currentClassId); const count = c.groupCount || 4;
+                const shuffled = [...c.students].sort(() => 0.5 - Math.random()); const batch = db.batch();
+                shuffled.forEach((s, i) => {
+                    const newGroup = (i % count) + 1; s.group = newGroup;
+                    const studentRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(s.id);
+                    batch.update(studentRef, { group: newGroup });
+                });
+                await batch.commit();
+                renderGroupsTab(c);
+            });
+
+            calculateGradesBtn.addEventListener('click', calculateGrades);
+            resetScoresBtn.addEventListener('click', resetScores);
+            exportGradesBtn.addEventListener('click', () => { let tsv = "姓名\t淨分\t平時分數\n"; document.querySelectorAll('#grades-table tbody tr').forEach(r => { const c = r.querySelectorAll('td'); tsv += `${c[0].textContent}\t${c[1].textContent}\t${c[2].textContent}\n`; }); navigator.clipboard.writeText(tsv).then(() => alert('成績已複製！可直接貼到Excel。')); });
+            
+            document.addEventListener('dragstart', (e) => { if(e.target.matches('.student-chip')) draggedStudentId = e.target.dataset.studentId; });
+            document.addEventListener('dragover', (e) => e.preventDefault());
+            document.addEventListener('drop', async (e) => {
+                 const col = e.target.closest('.group-column, #unassigned-students-column');
+                 if (col && draggedStudentId) {
+                    const groupId = col.id === 'unassigned-students-column' ? null : parseInt(col.dataset.groupId);
+                    const c = allClasses.find(cls => cls.id === currentClassId); const s = c.students.find(st => st.id === draggedStudentId);
+                    if(s) {
+                        await db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(draggedStudentId).update({ group: groupId });
+                        s.group = groupId;
+                        renderGroupsTab(c);
+                    }
+                 }
+                 draggedStudentId = null;
+            });
+            themeSwitcher.addEventListener('click', (e) => { const themeBtn = e.target.closest('.theme-btn'); if(themeBtn) { const themeName = themeBtn.id.replace('theme-', ''); applyTheme(themeName); saveTheme(themeName); } });
+
+            // --- 6. 背景動畫 ---
+            const canvas = document.getElementById('particle-canvas'); const ctx = canvas.getContext('2d'); let particles = [];
+            const resizeCanvas = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+            class Particle { constructor() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.size = Math.random() * 2.5 + 0.5; this.speedY = Math.random() * 0.5 + 0.1; this.opacity = Math.random() * 0.5 + 0.2; } update() { this.y -= this.speedY; if (this.y < 0) { this.y = canvas.height; this.x = Math.random() * canvas.width; } } draw() { const color = getComputedStyle(document.body).getPropertyValue('--particle-color').trim(); ctx.fillStyle = color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); } }
+            window.initParticles = () => { particles = []; const num = window.innerWidth / 30; for (let i = 0; i < num; i++) particles.push(new Particle()); };
+            const animateParticles = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animateParticles); };
+            window.addEventListener('resize', () => { resizeCanvas(); initParticles(); });
+            
+            // --- 7. 程式初始化 ---
+            loadTheme();
+            resizeCanvas();
+            initParticles();
+            animateParticles();
+        });
+    </script>
+</body>
+</html>
