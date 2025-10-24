@@ -201,31 +201,25 @@
     <script>
         // 2. 初始化 Firebase
         // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-        //  // Import the functions you need from the SDKs you need
-                import { initializeApp } from "firebase/app";
-                // TODO: Add SDKs for Firebase products that you want to use
-                // https://firebase.google.com/docs/web/setup#available-libraries
-                
-                // Your web app's Firebase configuration
-                const firebaseConfig = {
-                  apiKey: "AIzaSyBVmWb6L5AnZ_rM-3pITB0Mwy4Cr27xK7c",
-                  authDomain: "classroom-powerhouse.firebaseapp.com",
-                  projectId: "classroom-powerhouse",
-                  storageBucket: "classroom-powerhouse.firebasestorage.app",
-                  messagingSenderId: "268009025575",
-                  appId: "1:268009025575:web:e852aa4b277ea27a4cde02"
-                };
-                
-                // Initialize Firebase
-                const app = initializeApp(firebaseConfig);
+        //  請將您從 Firebase 控制台複製的 firebaseConfig 物件貼到這裡！
         // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY", // 替換成您的金鑰
-            authDomain: "YOUR_AUTH_DOMAIN", // 替換成您的金鑰
-            projectId: "YOUR_PROJECT_ID", // 替換成您的金鑰
-            storageBucket: "YOUR_STORAGE_BUCKET", // 替換成您的金鑰
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // 替換成您的金鑰
-            appId: "YOUR_APP_ID" // 替換成您的金鑰
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBVmWb6L5AnZ_rM-3pITB0Mwy4Cr27xK7c",
+  authDomain: "classroom-powerhouse.firebaseapp.com",
+  projectId: "classroom-powerhouse",
+  storageBucket: "classroom-powerhouse.firebasestorage.app",
+  messagingSenderId: "268009025575",
+  appId: "1:268009025575:web:e852aa4b277ea27a4cde02"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
         };
         
         // 使用 v8 全域 firebase 物件，不需 import
