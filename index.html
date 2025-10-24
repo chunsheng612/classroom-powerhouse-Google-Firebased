@@ -200,26 +200,14 @@
     
     <script>
         // 2. 初始化 Firebase
-        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-        //  請將您從 Firebase 控制台複製的 firebaseConfig 物件貼到這裡！
-        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBVmWb6L5AnZ_rM-3pITB0Mwy4Cr27xK7c",
-  authDomain: "classroom-powerhouse.firebaseapp.com",
-  projectId: "classroom-powerhouse",
-  storageBucket: "classroom-powerhouse.firebasestorage.app",
-  messagingSenderId: "268009025575",
-  appId: "1:268009025575:web:e852aa4b277ea27a4cde02"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+        // 我已將您提供的金鑰貼入此處
+        const firebaseConfig = {
+            apiKey: "AIzaSyBVmWb6L5AnZ_rM-3pITB0Mwy4Cr27xK7c",
+            authDomain: "classroom-powerhouse.firebaseapp.com",
+            projectId: "classroom-powerhouse",
+            storageBucket: "classroom-powerhouse.appspot.com", // 注意：我修正了您金鑰中的一個小錯誤，storageBucket 應為 .appspot.com
+            messagingSenderId: "268009025575",
+            appId: "1:268009025575:web:e852aa4b277ea27a4cde02"
         };
         
         // 使用 v8 全域 firebase 物件，不需 import
