@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>班級經營動力站 v3.0 (雲端版)</title>
     
-    <!-- 1. 引入 Firebase SDK -->
-    <!-- 使用 v8 版本，語法對初學者更直觀 -->
+    <!-- 1. 引入 Firebase v8 SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -93,7 +92,7 @@
         .btn-success { background: var(--success-color); color: white; }
         .btn-danger { background: var(--danger-color); color: white; }
         .btn-secondary { background: var(--input-bg); color: var(--text-color-primary); border: 1px solid var(--card-border); }
-        input { background: var(--input-bg); color: var(--text-color-primary); padding: 12px 15px; border: 1px solid var(--card-border); }
+        input { background: var(--input-bg); color: var(--text-color-primary); padding: 12px 15px; border: 1px solid var(--card-border); width: 100%; }
 
         #theme-switcher { display: flex; gap: 8px; background: var(--input-bg); padding: 5px; border-radius: var(--control-border-radius); border: 1px solid var(--card-border); }
         .theme-btn { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
@@ -206,16 +205,17 @@
                 import { initializeApp } from "firebase/app";
                 // TODO: Add SDKs for Firebase products that you want to use
                 // https://firebase.google.com/docs/web/setup#available-libraries
-
+                
                 // Your web app's Firebase configuration
                 const firebaseConfig = {
-                apiKey: "AIzaSyBVmWb6L5AnZ_rM-3pITB0Mwy4Cr27xK7c",
-                authDomain: "classroom-powerhouse.firebaseapp.com",
-                projectId: "classroom-powerhouse",
-                storageBucket: "classroom-powerhouse.firebasestorage.app",
-                messagingSenderId: "268009025575",
-                appId: "1:268009025575:web:e852aa4b277ea27a4cde02"
+                  apiKey: "AIzaSyBVmWb6L5AnZ_rM-3pITB0Mwy4Cr27xK7c",
+                  authDomain: "classroom-powerhouse.firebaseapp.com",
+                  projectId: "classroom-powerhouse",
+                  storageBucket: "classroom-powerhouse.firebasestorage.app",
+                  messagingSenderId: "268009025575",
+                  appId: "1:268009025575:web:e852aa4b277ea27a4cde02"
                 };
+                
                 // Initialize Firebase
                 const app = initializeApp(firebaseConfig);
         // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
@@ -228,6 +228,7 @@
             appId: "YOUR_APP_ID" // 替換成您的金鑰
         };
         
+        // 使用 v8 全域 firebase 物件，不需 import
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
@@ -236,18 +237,15 @@
             // --- 1. 變數宣告 ---
             const screens = { dashboard: document.getElementById('class-dashboard'), classView: document.getElementById('class-view') };
             const classDashboardGrid = document.getElementById('class-dashboard-grid');
-            
             const addClassModal = document.getElementById('add-class-modal');
             const newClassNameInput = document.getElementById('new-class-name');
             const newClassSizeInput = document.getElementById('new-class-size');
             const confirmAddClassBtn = document.getElementById('confirm-add-class');
             const cancelAddClassBtn = document.getElementById('cancel-add-class');
-
             const editClassModal = document.getElementById('edit-class-modal');
             const editClassNameInput = document.getElementById('edit-class-name');
             const confirmEditClassBtn = document.getElementById('confirm-edit-class');
             const cancelEditClassBtn = document.getElementById('cancel-edit-class');
-            
             const classViewTitle = document.getElementById('class-view-title');
             const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
             const navTabs = document.querySelectorAll('.nav-tab');
@@ -262,7 +260,6 @@
             const exportGradesBtn = document.getElementById('export-grades-btn');
             const resetScoresBtn = document.getElementById('reset-scores-btn');
             const themeSwitcher = document.getElementById('theme-switcher');
-            
             const loginBtn = document.getElementById('login-btn');
             const mainLoginBtn = document.getElementById('main-login-btn');
             const logoutBtn = document.getElementById('logout-btn');
@@ -279,7 +276,7 @@
             const switchScreen = (screenName) => { Object.values(screens).forEach(s => s.classList.remove('active')); screens[screenName].classList.add('active'); };
             const switchTab = (tabName) => { navTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName)); tabContents.forEach(c => c.classList.toggle('active', c.id === `${tabName}-tab`)); };
             const showModal = (modalId) => document.getElementById(modalId).classList.add('visible');
-            const hideModal = (modalId) => document.getElementById(modalId).classList.remove('visible');
+            const hideModal = (modalId) => { document.getElementById(modalId).classList.remove('visible'); };
             const applyTheme = (themeName) => { document.body.className = `theme-${themeName}`; document.querySelectorAll('.theme-btn').forEach(btn => { btn.classList.toggle('active', btn.id === `theme-${themeName}`); }); if (window.initParticles) initParticles(); };
             const saveTheme = (themeName) => localStorage.setItem('classroomPowerhouse_theme', themeName);
             const loadTheme = () => { const savedTheme = localStorage.getItem('classroomPowerhouse_theme') || 'cosmic'; applyTheme(savedTheme); };
@@ -294,20 +291,15 @@
                         const students = studentsSnapshot.docs.map(studentDoc => ({ id: studentDoc.id, ...studentDoc.data() }));
                         return { id: classDoc.id, ...classData, students };
                     });
-                    
                     allClasses = await Promise.all(classPromises);
                     renderDashboard();
-                } catch (error) {
-                    console.error("Error loading data:", error);
-                    alert("讀取資料失敗，請檢查網路連線或稍後再試。");
-                }
+                } catch (error) { console.error("Error loading data:", error); alert("讀取資料失敗，請檢查網路連線或稍後再試。"); }
             }
 
             // --- 3. 畫面渲染函數 ---
             const renderDashboard = () => {
                 classDashboardGrid.innerHTML = '';
                 if (!currentUser) return;
-                
                 allClasses.forEach(c => {
                     const card = document.createElement('div');
                     card.className = 'card class-card';
@@ -323,13 +315,12 @@
             };
             const renderClassView = () => { const c = allClasses.find(cls => cls.id === currentClassId); if (!c) { switchScreen('dashboard'); return; } classViewTitle.textContent = c.name; renderStudentsTab(c); renderGroupsTab(c); renderGradesTab(c); switchTab('students'); switchScreen('classView'); };
             const renderStudentsTab = (c) => { studentGrid.innerHTML = ''; c.students.sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric: true})).forEach(s => { const card = document.createElement('div'); card.className = 'card student-card'; card.innerHTML = `<div class="student-header"><div class="student-name">${s.name}</div><button class="delete-student-btn" data-id="${s.id}" title="刪除學生">🗑️</button></div><div class="student-score">${s.score}</div><div class="score-controls"><button class="btn btn-danger score-btn" data-id="${s.id}" data-amount="-1">-</button><button class="btn btn-success score-btn" data-id="${s.id}" data-amount="1">+</button></div>`; studentGrid.appendChild(card); }); };
-            const renderGroupsTab = (c) => { unassignedStudentsContainer.innerHTML = ''; groupsArea.innerHTML = ''; if (!c.groupCount) c.groupCount = 4; groupCountInput.value = c.groupCount; c.students.forEach(s => { if (s.group === null || s.group > c.groupCount) unassignedStudentsContainer.appendChild(createStudentChip(s)); }); for (let i = 1; i <= c.groupCount; i++) { const col = document.createElement('div'); col.className = 'group-column card'; col.dataset.groupId = i; col.innerHTML = `<div class="group-header"><h3>第 ${i} 組</h3><div class="score-controls"><button class="btn btn-danger score-btn" data-group-id="${i}" data-amount="-1">-</button><button class="btn btn-success score-btn" data-group-id="${i}" data-amount="1">+</button></div></div><div class="group-members"></div>`; const members = col.querySelector('.group-members'); c.students.filter(s => s.group === i).forEach(s => members.appendChild(createStudentChip(s))); groupsArea.appendChild(col); } };
+            const renderGroupsTab = (c) => { unassignedStudentsContainer.innerHTML = ''; groupsArea.innerHTML = ''; c.groupCount = c.groupCount || 4; groupCountInput.value = c.groupCount; c.students.forEach(s => { if (s.group === null || s.group > c.groupCount) unassignedStudentsContainer.appendChild(createStudentChip(s)); }); for (let i = 1; i <= c.groupCount; i++) { const col = document.createElement('div'); col.className = 'group-column card'; col.dataset.groupId = i; col.innerHTML = `<div class="group-header"><h3>第 ${i} 組</h3><div class="score-controls"><button class="btn btn-danger score-btn" data-group-id="${i}" data-amount="-1">-</button><button class="btn btn-success score-btn" data-group-id="${i}" data-amount="1">+</button></div></div><div class="group-members"></div>`; const members = col.querySelector('.group-members'); c.students.filter(s => s.group === i).forEach(s => members.appendChild(createStudentChip(s))); groupsArea.appendChild(col); } };
             const renderGradesTab = (c) => { gradesTableBody.innerHTML = ''; c.students.sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric: true})).forEach(s => { const r = document.createElement('tr'); r.innerHTML = `<td>${s.name}</td><td>${s.score}</td><td class="final-grade" data-id="${s.id}">-</td>`; gradesTableBody.appendChild(r); }); };
             const createStudentChip = (s) => { const c = document.createElement('div'); c.className = 'student-chip'; c.textContent = s.name; c.dataset.studentId = s.id; c.draggable = true; return c; };
 
             // --- 4. 業務邏輯函數 ---
             const showScoreFeedback = (el, amount) => { const f = document.createElement('div'); f.className = 'score-feedback'; f.textContent = amount > 0 ? `+${amount}` : amount; f.style.color = amount > 0 ? 'var(--success-color)' : 'var(--danger-color)'; el.appendChild(f); setTimeout(() => f.remove(), 600); };
-            
             const updateScore = async (studentId, amount) => {
                 const c = allClasses.find(cls => cls.id === currentClassId); const s = c.students.find(st => st.id === studentId);
                 if (s) {
@@ -341,7 +332,6 @@
                     setTimeout(() => { renderStudentsTab(c); renderGradesTab(c); }, 300);
                 }
             };
-            
             const updateGroupScore = async (groupId, amount) => {
                 const c = allClasses.find(cls => cls.id === currentClassId); const batch = db.batch();
                 c.students.filter(s => s.group === groupId).forEach(s => {
@@ -354,36 +344,14 @@
                 showScoreFeedback(col, amount);
                 setTimeout(() => { renderStudentsTab(c); renderGradesTab(c); }, 300);
             };
-            
-            const calculateGrades = () => { const c = allClasses.find(cls => cls.id === currentClassId); const scores = c.students.map(s => s.score); const min = Math.min(...scores), max = Math.max(...scores); const range = max - min; c.students.forEach(s => { let grade = (range === 0) ? 90 : 80 + ((s.score - min) / range) * 20; document.querySelector(`.final-grade[data-id="${s.id}"]`).textContent = Math.round(grade); }); };
-
-            const resetScores = async () => {
-                if(confirm('確定要重置此班級所有學生的分數為 0 嗎？')) {
-                    const c = allClasses.find(cls => cls.id === currentClassId); const batch = db.batch();
-                    c.students.forEach(s => {
-                        const studentRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(s.id);
-                        batch.update(studentRef, { score: 0 });
-                        s.score = 0;
-                    });
-                    await batch.commit();
-                    renderClassView();
-                }
-            };
-            
-            async function deleteClassAndSubcollections(classId) {
-                const classRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(classId);
-                const studentsSnapshot = await classRef.collection('students').get();
-                const batch = db.batch();
-                studentsSnapshot.docs.forEach(doc => { batch.delete(doc.ref); });
-                await batch.commit();
-                await classRef.delete();
-            }
+            const calculateGrades = () => { const c = allClasses.find(cls => cls.id === currentClassId); if(!c.students.length) return; const scores = c.students.map(s => s.score); const min = Math.min(...scores), max = Math.max(...scores); const range = max - min; c.students.forEach(s => { let grade = (range === 0) ? 90 : 80 + ((s.score - min) / range) * 20; document.querySelector(`.final-grade[data-id="${s.id}"]`).textContent = Math.round(grade); }); };
+            const resetScores = async () => { if(confirm('確定要重置此班級所有學生的分數為 0 嗎？')) { const c = allClasses.find(cls => cls.id === currentClassId); const batch = db.batch(); c.students.forEach(s => { const studentRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(s.id); batch.update(studentRef, { score: 0 }); s.score = 0; }); await batch.commit(); renderClassView(); } };
+            async function deleteClassAndSubcollections(classId) { const classRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(classId); const studentsSnapshot = await classRef.collection('students').get(); const batch = db.batch(); studentsSnapshot.docs.forEach(doc => { batch.delete(doc.ref); }); await batch.commit(); await classRef.delete(); }
 
             // --- 5. 事件監聽 ---
             auth.onAuthStateChanged(user => {
                 if (user) {
-                    currentUser = user;
-                    userInfo.textContent = user.displayName;
+                    currentUser = user; userInfo.textContent = user.displayName;
                     loginBtn.style.display = 'none'; logoutBtn.style.display = 'block'; userInfo.style.display = 'block';
                     loggedOutView.style.display = 'none'; appContent.style.display = 'block';
                     loadDataFromFirestore();
@@ -391,116 +359,39 @@
                     currentUser = null; allClasses = [];
                     loginBtn.style.display = 'block'; logoutBtn.style.display = 'none'; userInfo.style.display = 'none';
                     loggedOutView.style.display = 'flex'; appContent.style.display = 'none';
-                    switchScreen('dashboard');
-                    renderDashboard();
+                    switchScreen('dashboard'); renderDashboard();
                 }
             });
-
             const handleLogin = () => { const provider = new firebase.auth.GoogleAuthProvider(); auth.signInWithPopup(provider).catch(error => console.error("Login failed:", error)); };
             loginBtn.addEventListener('click', handleLogin);
             mainLoginBtn.addEventListener('click', handleLogin);
             logoutBtn.addEventListener('click', () => auth.signOut());
-
             classDashboardGrid.addEventListener('click', async (e) => {
-                const card = e.target.closest('.class-card'); if (!card) return;
-                const classId = card.dataset.id;
-                
-                if (e.target.closest('.delete-class-btn')) {
-                    e.stopPropagation();
-                    const targetClass = allClasses.find(c => c.id === classId);
-                    if (targetClass && confirm(`確定要刪除「${targetClass.name}」嗎？所有資料將無法復原！`)) {
-                        await deleteClassAndSubcollections(classId);
-                        await loadDataFromFirestore();
-                    }
-                } else if (e.target.closest('.edit-class-btn')) {
-                    e.stopPropagation();
-                    const targetClass = allClasses.find(c => c.id === classId);
-                    if (targetClass) { editClassNameInput.value = targetClass.name; editClassModal.dataset.editingId = classId; showModal('edit-class-modal'); }
-                } else if (card.id === 'add-class-card') {
-                    showModal('add-class-modal');
-                } else if (classId) {
-                    currentClassId = classId; renderClassView();
-                }
+                const card = e.target.closest('.class-card'); if (!card) return; const classId = card.dataset.id;
+                if (e.target.closest('.delete-class-btn')) { e.stopPropagation(); const targetClass = allClasses.find(c => c.id === classId); if (targetClass && confirm(`確定要刪除「${targetClass.name}」嗎？所有資料將無法復原！`)) { await deleteClassAndSubcollections(classId); await loadDataFromFirestore(); }
+                } else if (e.target.closest('.edit-class-btn')) { e.stopPropagation(); const targetClass = allClasses.find(c => c.id === classId); if (targetClass) { editClassNameInput.value = targetClass.name; editClassModal.dataset.editingId = classId; showModal('edit-class-modal'); }
+                } else if (card.id === 'add-class-card') { showModal('add-class-modal'); } else if (classId) { currentClassId = classId; renderClassView(); }
             });
-            
             studentGrid.addEventListener('click', async (e) => {
                 if (e.target.matches('.score-btn')) { updateScore(e.target.dataset.id, parseInt(e.target.dataset.amount)); }
                 const deleteBtn = e.target.closest('.delete-student-btn');
-                if (deleteBtn) {
-                    const studentId = deleteBtn.dataset.id; const c = allClasses.find(cls => cls.id === currentClassId); const s = c.students.find(st => st.id === studentId);
-                    if (s && confirm(`確定要刪除學生「${s.name}」嗎？`)) {
-                        await db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(studentId).delete();
-                        c.students = c.students.filter(st => st.id !== studentId);
-                        renderClassView();
-                    }
-                }
+                if (deleteBtn) { const studentId = deleteBtn.dataset.id; const c = allClasses.find(cls => cls.id === currentClassId); const s = c.students.find(st => st.id === studentId); if (s && confirm(`確定要刪除學生「${s.name}」嗎？`)) { await db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(studentId).delete(); c.students = c.students.filter(st => st.id !== studentId); renderClassView(); } }
             });
-
-            confirmAddClassBtn.addEventListener('click', async () => { 
-                const name = newClassNameInput.value.trim(); const count = parseInt(newClassSizeInput.value, 10);
-                if (name && count > 0 && currentUser) {
-                    const classRef = await db.collection('users').doc(currentUser.uid).collection('classes').add({ name, groupCount: 4, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-                    const batch = db.batch();
-                    for(let i=1; i<=count; i++) {
-                        const studentRef = classRef.collection('students').doc();
-                        batch.set(studentRef, {name: `${i}號`, score: 0, group: null});
-                    }
-                    await batch.commit();
-                    await loadDataFromFirestore();
-                    hideModal('add-class-modal');
-                    newClassNameInput.value = ''; newClassSizeInput.value = 28;
-                } else { alert('請輸入有效班級名稱與人數 (1-60)。'); }
-            });
+            confirmAddClassBtn.addEventListener('click', async () => { const name = newClassNameInput.value.trim(); const count = parseInt(newClassSizeInput.value, 10); if (name && count > 0 && currentUser) { const classRef = await db.collection('users').doc(currentUser.uid).collection('classes').add({ name, groupCount: 4 }); const batch = db.batch(); for(let i=1; i<=count; i++) { const studentRef = classRef.collection('students').doc(); batch.set(studentRef, {name: `${i}號`, score: 0, group: null}); } await batch.commit(); await loadDataFromFirestore(); hideModal('add-class-modal'); newClassNameInput.value = ''; newClassSizeInput.value = 28; } else { alert('請輸入有效班級名稱與人數 (1-60)。'); } });
             cancelAddClassBtn.addEventListener('click', () => hideModal('add-class-modal'));
-            
-            confirmEditClassBtn.addEventListener('click', async () => {
-                const newName = editClassNameInput.value.trim(); const editingId = editClassModal.dataset.editingId;
-                if (newName && editingId) {
-                    await db.collection('users').doc(currentUser.uid).collection('classes').doc(editingId).update({ name: newName });
-                    const targetClass = allClasses.find(c => c.id === editingId);
-                    if(targetClass) targetClass.name = newName;
-                    renderDashboard();
-                    hideModal('edit-class-modal');
-                } else { alert('請輸入有效的班級名稱。'); }
-            });
+            confirmEditClassBtn.addEventListener('click', async () => { const newName = editClassNameInput.value.trim(); const editingId = editClassModal.dataset.editingId; if (newName && editingId) { await db.collection('users').doc(currentUser.uid).collection('classes').doc(editingId).update({ name: newName }); const targetClass = allClasses.find(c => c.id === editingId); if(targetClass) targetClass.name = newName; renderDashboard(); hideModal('edit-class-modal'); } else { alert('請輸入有效的班級名稱。'); } });
             cancelEditClassBtn.addEventListener('click', () => hideModal('edit-class-modal'));
-
             backToDashboardBtn.addEventListener('click', () => { switchScreen('dashboard'); });
             navTabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
             groupsArea.addEventListener('click', (e) => { if (e.target.matches('.score-btn')) updateGroupScore(parseInt(e.target.dataset.groupId), parseInt(e.target.dataset.amount)); });
-            
             groupCountInput.addEventListener('change', async () => {
                 const newCount = parseInt(groupCountInput.value, 10); const c = allClasses.find(cls => cls.id === currentClassId);
-                if (newCount > 0 && c) {
-                    await db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).update({ groupCount: newCount });
-                    c.groupCount = newCount;
-                    const batch = db.batch();
-                    c.students.forEach(s => {
-                        const studentRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(s.id);
-                        batch.update(studentRef, { group: null });
-                        s.group = null;
-                    });
-                    await batch.commit();
-                    renderGroupsTab(c);
-                }
+                if (newCount > 0 && c) { await db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).update({ groupCount: newCount }); c.groupCount = newCount; const batch = db.batch(); c.students.forEach(s => { const studentRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(s.id); batch.update(studentRef, { group: null }); s.group = null; }); await batch.commit(); renderGroupsTab(c); }
             });
-
-            randomGroupBtn.addEventListener('click', async () => { 
-                const c = allClasses.find(cls => cls.id === currentClassId); const count = c.groupCount || 4;
-                const shuffled = [...c.students].sort(() => 0.5 - Math.random()); const batch = db.batch();
-                shuffled.forEach((s, i) => {
-                    const newGroup = (i % count) + 1; s.group = newGroup;
-                    const studentRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(s.id);
-                    batch.update(studentRef, { group: newGroup });
-                });
-                await batch.commit();
-                renderGroupsTab(c);
-            });
-
+            randomGroupBtn.addEventListener('click', async () => { const c = allClasses.find(cls => cls.id === currentClassId); const count = c.groupCount || 4; const shuffled = [...c.students].sort(() => 0.5 - Math.random()); const batch = db.batch(); shuffled.forEach((s, i) => { const newGroup = (i % count) + 1; s.group = newGroup; const studentRef = db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(s.id); batch.update(studentRef, { group: newGroup }); }); await batch.commit(); renderGroupsTab(c); });
             calculateGradesBtn.addEventListener('click', calculateGrades);
             resetScoresBtn.addEventListener('click', resetScores);
             exportGradesBtn.addEventListener('click', () => { let tsv = "姓名\t淨分\t平時分數\n"; document.querySelectorAll('#grades-table tbody tr').forEach(r => { const c = r.querySelectorAll('td'); tsv += `${c[0].textContent}\t${c[1].textContent}\t${c[2].textContent}\n`; }); navigator.clipboard.writeText(tsv).then(() => alert('成績已複製！可直接貼到Excel。')); });
-            
             document.addEventListener('dragstart', (e) => { if(e.target.matches('.student-chip')) draggedStudentId = e.target.dataset.studentId; });
             document.addEventListener('dragover', (e) => e.preventDefault());
             document.addEventListener('drop', async (e) => {
@@ -508,11 +399,7 @@
                  if (col && draggedStudentId) {
                     const groupId = col.id === 'unassigned-students-column' ? null : parseInt(col.dataset.groupId);
                     const c = allClasses.find(cls => cls.id === currentClassId); const s = c.students.find(st => st.id === draggedStudentId);
-                    if(s) {
-                        await db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(draggedStudentId).update({ group: groupId });
-                        s.group = groupId;
-                        renderGroupsTab(c);
-                    }
+                    if(s) { await db.collection('users').doc(currentUser.uid).collection('classes').doc(currentClassId).collection('students').doc(draggedStudentId).update({ group: groupId }); s.group = groupId; renderGroupsTab(c); }
                  }
                  draggedStudentId = null;
             });
